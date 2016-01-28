@@ -23,6 +23,8 @@
 #include <linux/err.h>
 #include <linux/string.h>
 #include <linux/debug_display.h>
+#include <linux/display_state.h>
+
 
 #include "mdss_dsi.h"
 #include "mdss_htc_util.h"
@@ -31,7 +33,110 @@
 #define MIN_REFRESH_RATE 30
 #define DEFAULT_MDP_TRANSFER_TIME 14000
 
-#define MDSS_BL_SETTING_DEF 142
+bool display_on = true;
+
+bool is_display_on()
+{
+	return display_on;
+}
+
+
+
+#ifdef VENDOR_EDIT
+#include <linux/boot_mode.h>
+
+/* guizhiming Add for set cabc 2015-04-01 */
+struct dsi_panel_cmds cabc_off_sequence;
+struct dsi_panel_cmds cabc_user_interface_image_sequence;
+struct dsi_panel_cmds cabc_still_image_sequence;
+struct dsi_panel_cmds cabc_video_image_sequence;
+struct dsi_panel_cmds oa_sequence;
+enum
+{
+	CABC_CLOSE = 0,
+	CABC_LOW_MODE,
+	CABC_MIDDLE_MODE,
+	CABC_HIGH_MODE,
+
+};
+int cabc_mode = CABC_MIDDLE_MODE; //defaoult mode level 2 in dtsi file
+struct mdss_dsi_ctrl_pdata *panel_data;
+static bool flag_lcd_off = false;
+static DEFINE_MUTEX(cabc_mutex);
+
+#endif
+
+#ifdef VENDOR_EDIT  //gzm@oem add 2015-03-28
+
+#include <linux/project_info.h>
+#define ESD_TE_Check_On
+#ifdef ESD_TE_Check_On
+#include <linux/switch.h>
+static int irq;
+unsigned long flags;
+static int te_state;
+static struct class * mdss_lcd;
+static struct device * dev_lcd;
+static struct switch_dev display_switch;
+static struct delayed_work techeck_work;
+DEFINE_SPINLOCK(te_state_lock);
+static struct completion te_comp;
+
+static irqreturn_t TE_irq_thread_fn(int irq, void *dev_id)
+{
+	complete(&te_comp);
+	return IRQ_HANDLED;
+}
+
+static int operate_display_switch(void)
+{
+	int ret = 0;
+
+	printk(KERN_ERR"%s:state=%d.\n", __func__, te_state);
+	spin_lock_irqsave(&te_state_lock, flags);
+	if(te_state)
+		te_state = 0;
+	else
+		te_state = 1;
+	spin_unlock_irqrestore(&te_state_lock, flags);
+
+	switch_set_state(&display_switch, te_state);
+	return ret;
+}
+
+static ssize_t attr_mdss_dispswitch(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	printk(KERN_ERR" @@@@ attr_mdss_dispswitch  \n");
+	operate_display_switch();
+
+	return 0;
+}
+
+static struct device_attribute mdss_lcd_attrs[] = {
+	__ATTR(dispswitch, S_IRUGO, attr_mdss_dispswitch, NULL),
+	__ATTR_NULL,
+};
+
+static void techeck_work_func( struct work_struct *work )
+{
+	int ret = 0;
+	//pr_err("techeck_work_func\n");
+	INIT_COMPLETION(te_comp);
+	enable_irq(irq);
+	ret = wait_for_completion_killable_timeout(&te_comp, msecs_to_jiffies(100));
+	if(ret == 0) {
+		disable_irq(irq);
+		operate_display_switch();
+		return;
+	}
+	//pr_err("ret = %d\n", ret);
+	disable_irq(irq);
+	schedule_delayed_work(&techeck_work, msecs_to_jiffies(2000));
+}
+#endif
+#endif /*EDIT*/
+
 
 DEFINE_LED_TRIGGER(bl_led_trigger);
 
@@ -658,6 +763,8 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 		return -EINVAL;
 	}
 
+display_on = true;
+
 	pinfo = &pdata->panel_info;
 	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
@@ -709,6 +816,15 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 
 	if (ctrl->off_cmds.cmd_cnt)
 		mdss_dsi_panel_cmds_send(ctrl, &ctrl->off_cmds, CMD_REQ_COMMIT);
+
+
+	display_on = false;
+
+//	memset(rx_buf, 0, sizeof(rx_buf));
+//	mdss_debug_enable_clock(1);
+//	mdss_dsi_panel_cmd_read(ctrl, 0x0A, 0, NULL, rx_buf, 1);
+//	printk("%s: after sleep Reg 0A 0x%02x\n", __func__, rx_buf[0]);
+//	mdss_debug_enable_clock(0);
 
 end:
 	pinfo->blank_state = MDSS_PANEL_BLANK_BLANK;
