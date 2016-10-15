@@ -152,6 +152,13 @@ config CPU_FREQ_DEFAULT_GOV_ELEMENTALX
 	help
 	  Use the CPUFreq governor 'elementalx' as default.
 
+config CPU_FREQ_DEFAULT_GOV_HYPERX
+        bool "HYPERX"
+        select CPU_FREQ_GOV_HYPERX
+        ---help---
+          Use the CPUFreq governor 'HYPERX' as default.
+
+
 config CPU_FREQ_DEFAULT_GOV_IMPULSE
 	bool "impulse"
 	select CPU_FREQ_GOV_IMPULSE
@@ -380,6 +387,13 @@ config GENERIC_CPUFREQ_CPU0
 
 	  If in doubt, say N.
 
+config CPU_FREQ_GOV_HYPERX
+        tristate "'HYPERX' cpufreq governor"
+        depends on CPU_FREQ
+        ---help---
+          'HYPERX' - a tweaked "ondemand" based smart and smooth optimized governor!
+
+           If in doubt, say Y.
 menu "x86 CPU frequency scaling drivers"
 depends on X86
 source "drivers/cpufreq/Kconfig.x86"
