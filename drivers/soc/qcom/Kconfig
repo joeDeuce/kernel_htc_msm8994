@@ -625,10 +625,20 @@ config MSM_PACMAN
 	  This driver allows reconfiguration of the Bus Access Manager
 	  Low Speed Peripheral (BLSP) ownership.
 
+
 config MSM_CORE_CTL
 	tristate "Core control module"
 	help
 	  Add support for the Qualcomm core control module
+
+config ASMP
+ 	bool "Multi-core automatic hotplug support"
+ 	depends on SMP
+ 	default n
+ 	help
+ 	Automatically hotplugs the multiple cpu cores on and off
+ 	based on cpu load and suspend stat
+
 
 config MSM_CORE_CTL_HELPER
 	tristate "Core control helper functions for dynamically hotplug CPUs"
