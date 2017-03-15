@@ -142,6 +142,7 @@ config CPU_FREQ_DEFAULT_GOV_WHEATLEY
 	---help---
 	  Use the CPUFreq governor 'wheatley' as default.
 
+
 config CPU_FREQ_DEFAULT_GOV_CHILL
 	bool "chill"
 	select CPU_FREQ_GOV_CHILL
@@ -502,8 +503,7 @@ config CPU_FREQ_GOV_LIONFISH
 
 	  If in doubt, say N.
 
-<<<<<<< HEAD
-=======
+
 config CPU_FREQ_GOV_IRONACTIVE 
   	tristate "'ironactive' cpufreq policy governor" 
   	help 
@@ -549,7 +549,6 @@ config CPU_FREQ_GOV_BLUACTIVE
 	help
 	  'bluactive' - less aggressive version of interactive
 
->>>>>>> 5bf67ae... add Blu Active gov
 config CPU_BOOST
 	tristate "Event base short term CPU freq boost"
 	depends on CPU_FREQ
