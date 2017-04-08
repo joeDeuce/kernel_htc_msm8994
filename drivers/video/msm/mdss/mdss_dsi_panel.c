@@ -32,6 +32,7 @@
 #define DT_CMD_HDR 6
 #define MIN_REFRESH_RATE 30
 #define DEFAULT_MDP_TRANSFER_TIME 14000
+#define MDSS_BL_SETTING_DEF 142
 
 bool display_on = true;
 
